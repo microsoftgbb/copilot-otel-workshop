@@ -1,0 +1,17 @@
+{
+  "telemetry": {
+    "enabled": true,
+    "endpoint": "https://otel.example.com:4318",
+    "protocol": "http/protobuf",
+    "captureContent": false,
+    "lockCaptureContent": true,
+    "serviceName": "copilot",
+    "resourceAttributes": {
+      "deployment.environment.name": "production",
+      "team": "platform"
+    },
+    "headers": {
+      "Authorization": "Bearer REPLACE_WITH_INGEST_TOKEN"
+    }
+  }
+}

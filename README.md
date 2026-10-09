@@ -26,8 +26,9 @@ Everything runs on your machine with Docker. The labs use the free [Aspire Dashb
 | 05 | [Engineers](modules/05-engineers.md) (lab) | 30 min | Diagnose a slow, failing or costly agent run |
 | 06 | [Engineering managers](modules/06-managers.md) | 20 min | Ask answerable questions and avoid misleading metrics |
 | 07 | [GitHub operations](modules/07-operations.md) | 30 min | Roll out, govern and size a deployment |
+| 08 | [Managing OTel with managed settings](modules/08-managed-settings.md) (lab) | 30 min | Enforce telemetry enterprise-wide: write, deliver, prioritise and verify the `telemetry` block |
 
-Everyone does 01 to 04. Then pick a track (05, 06 or 07). Allow about 3 hours for everything, or 90 minutes for one track.
+Everyone does 01 to 04. Then pick a track (05, 06 or 07). Administrators who will enforce OTel also do 08. Allow about 3.5 hours for everything, or 90 minutes for one track.
 
 ## Which Copilot surfaces are covered
 
@@ -70,7 +71,8 @@ If ports 4317, 4318 or 18888 are taken, copy `lab/.env.example` to `lab/.env` an
 | Capture prompts and tool output | `OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=true` (off by default; read module 03 first) |
 | Turn it on in an SDK app | `new CopilotClient({ telemetry: { otlpEndpoint } })` |
 | Turn it on in VS Code | `github.copilot.chat.otel.enabled` and `github.copilot.chat.otel.otlpEndpoint` |
-| Enforce it across an enterprise | `telemetry` block in `managed-settings.json` |
+| Enforce it across an enterprise | `telemetry` block in `managed-settings.json` ([module 08](modules/08-managed-settings.md)) |
+| Lint a managed-settings telemetry block | `python3 lab/scripts/managed_settings.py validate file.json` |
 | Read data with no backend | `python3 lab/scripts/analyze.py sessions archive.jsonl` |
 
 ## Repository layout
@@ -81,7 +83,8 @@ If ports 4317, 4318 or 18888 are taken, copy `lab/.env.example` to `lab/.env` an
 | [lab/compose.yaml](lab/compose.yaml) | Collector plus Aspire Dashboard, with a JSONL archive |
 | [lab/overlays/](lab/overlays) | Collector overlays: `redact`, `fanout`, `auth` |
 | [lab/env/copilot-otel.sh](lab/env/copilot-otel.sh) | Point a shell's Copilot sessions at the collector; undo with `copilot_otel_off` |
-| [lab/scripts/](lab/scripts) | `traffic.sh`, `analyze.py`, `sanitize.py` |
+| [lab/scripts/](lab/scripts) | `traffic.sh`, `analyze.py`, `sanitize.py`, `managed_settings.py` |
+| [lab/managed-settings/](lab/managed-settings) | An example `telemetry` block for managed settings |
 | [lab/sdk/](lab/sdk) | A minimal Copilot SDK app that exports telemetry |
 | [lab/samples/](lab/samples) | A sanitized recording of real sessions, so labs work offline |
 | [lab/tests/](lab/tests) | Unit tests and a stack smoke test |

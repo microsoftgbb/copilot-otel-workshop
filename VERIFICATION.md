@@ -54,7 +54,14 @@ Environment for the observed results: Copilot CLI 1.0.95, `@github/copilot-sdk` 
 | A2 | Does the app honour `OTEL_*` / `COPILOT_OTEL_*` env vars? Its `service.name` and span set? | **Open** | 02 |
 | M1 | `telemetry` keys: enabled, endpoint, protocol, captureContent, lockCaptureContent, serviceName, resourceAttributes, headers | Documented | 02, 07 |
 | M2 | Delivery by `.github-private` repo, MDM or local file | Documented | 07 |
-| M3 | Whether `telemetry` can be specialised per team with `overridable` | **Open** | 07 |
+| M3 | `telemetry` is **not** in the documented list of team-overridable keys, so it cannot be specialised per team | Documented | 07, 08 |
+| M4 | Precedence across delivery methods: MDM, then server-managed, then file-based, then user settings | Documented | 07, 08 |
+| M5 | MDM stores values as strings under `HKLM\SOFTWARE\Policies\GitHubCopilot` (Windows) or the `com.github.copilot` domain (macOS); nested keys are dot-separated; objects are JSON text | Documented | 08 |
+| M6 | How MDM expects `telemetry.resourceAttributes` and `telemetry.headers` (JSON text, or flattened) | **Open** | 08 |
+| M7 | CLI rejects file-based settings that are symlinks, not root-owned, or group/world-writable (macOS, Linux) | Documented | 08 |
+| M8 | Server-managed settings refresh about hourly; restart or re-sign-in refreshes immediately | Documented | 08 |
+| M9 | A bearer token in `headers` is readable by enterprise members and delivered to all clients (inferred from the guide's advice to use internal repository visibility) | Documented (inference) | 07, 08 |
+| M10 | End-to-end: a managed `telemetry` block actually makes the CLI, VS Code and app export, with `lockCaptureContent` stopping an env-var override | **Open** | 08 |
 
 ## Collector and tooling
 
@@ -65,6 +72,7 @@ Environment for the observed results: Copilot CLI 1.0.95, `@github/copilot-sdk` 
 | T3 | Auth overlay returns 401 without and 200 with the bearer token | Observed (`lab/tests/smoke.sh`) | 04 |
 | T4 | Collector tag overrides client `deployment.environment.name` | Observed | 04 |
 | T5 | `env/copilot-otel.sh` restores the prior environment in bash and zsh | Observed (`lab/tests`) | 02 |
+| T6 | `managed_settings.py` lints the `telemetry` block (unknown keys, types, protocol, plain http, unlocked capture, real-looking credentials) and converts it to MDM string values | Observed (`lab/tests`); it is a local lint, not GitHub's validator | 08 |
 
 ## How to update this file
 
