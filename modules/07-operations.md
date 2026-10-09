@@ -37,15 +37,17 @@ Per the [reference](https://docs.github.com/en/copilot/reference/enterprise-admi
 
 ### How the file reaches clients
 
-The [getting started guide](https://docs.github.com/en/copilot/how-tos/administer-copilot/manage-for-enterprise/use-managed-settings/get-started) describes three delivery methods:
+The full walkthrough, with commands and a local lint, is [module 08](08-managed-settings.md). In short, there are three delivery methods:
 
 | Method | Notes |
 |---|---|
-| **Server-managed** | Host `copilot/managed-settings.json` in a `.github-private` repository owned by a designated organisation. Applies to everyone who receives a Copilot licence from your enterprise or its organisations |
-| **Device management (MDM)** | Windows registry or macOS managed preferences. Some settings need it |
-| **Local file** | A `managed-settings.json` on the device |
+| **Server-managed** | `copilot/managed-settings.json` in a `.github-private` repository. Applies to users licensed by your enterprise or its organisations, on all clients including the cloud agent. Refreshes about hourly |
+| **MDM** | Windows registry or macOS managed preferences, as string values. Applies to the device regardless of licence |
+| **File-based** | A `managed-settings.json` on the device. Applies regardless of licence; the CLI rejects files that are symlinks or not root-owned and unwritable by others |
 
-Some keys can be specialised per enterprise team with the `{ "overridable": ... }` syntax. Whether `telemetry` is one of them is not established here; check the reference before relying on it.
+When sources conflict, earlier wins: MDM, then server-managed, then file-based, then user settings.
+
+Per-team specialisation (`{ "overridable": ... }`) exists, but **`telemetry` is not in the documented list of overridable keys**, so it cannot be varied per team. Plan for one enterprise-wide destination.
 
 ### Precedence and traps
 
@@ -60,8 +62,8 @@ Some keys can be specialised per enterprise team with the `{ "overridable": ... 
 Other limits to plan around:
 
 - It is **one static file for a fleet**. You can tag environment or team, but not an individual agent or person.
-- The token in `headers` is distributed to every managed client. Use an ingest token you can rotate, scoped to write-only access.
-- Precedence for the **CLI** and the **app** was not tested here. Verify, then record it in [VERIFICATION.md](../VERIFICATION.md).
+- The token in `headers` is delivered to every managed client, and the getting-started guide recommends enterprise-visible access to the repository that hosts the file. Treat any bearer token there as widely readable: use a write-only ingest token you can rotate, or network controls or mTLS at the collector ([module 08](08-managed-settings.md)).
+- Precedence for the **CLI** and the **app** versus environment variables was not tested here. Verify, then record it in [VERIFICATION.md](../VERIFICATION.md).
 
 ## Size it *(observed, Copilot CLI 1.0.95)*
 

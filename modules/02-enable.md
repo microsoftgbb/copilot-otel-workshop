@@ -151,7 +151,7 @@ An administrator can enforce OTel for the CLI and VS Code through the `telemetry
 }
 ```
 
-`lockCaptureContent` stops users turning content capture on. Delivery methods, limits and precedence are in [module 07](07-operations.md).
+`lockCaptureContent` stops users turning content capture on. Delivery methods, precedence and a lint for this block are in [module 08](08-managed-settings.md).
 
 ## Troubleshooting: "I see nothing"
 
