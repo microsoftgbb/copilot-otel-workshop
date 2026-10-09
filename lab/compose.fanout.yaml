@@ -1,0 +1,8 @@
+# docker compose -f compose.yaml -f compose.fanout.yaml up -d --force-recreate otel-collector
+services:
+  otel-collector:
+    command:
+      - --config=/etc/otelcol/config.yaml
+      - --config=/etc/otelcol/fanout.yaml
+    volumes:
+      - ./overlays/fanout.yaml:/etc/otelcol/fanout.yaml:ro

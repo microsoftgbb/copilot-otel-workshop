@@ -1,0 +1,23 @@
+# Collector overlay: strip sensitive attributes centrally, whatever clients send.
+# Overlays REPLACE lists rather than merging them, so the pipeline restates its processors.
+processors:
+  attributes/redact:
+    actions:
+      # Content that appears only when a client enables content capture.
+      - { key: gen_ai.input.messages,                     action: delete }
+      - { key: gen_ai.output.messages,                    action: delete }
+      - { key: gen_ai.system_instructions,                action: delete }
+      - { key: gen_ai.tool.definitions,                   action: delete }
+      - { key: gen_ai.tool.call.arguments,                action: delete }
+      - { key: gen_ai.tool.call.result,                   action: delete }
+      - { key: github.copilot.tool.parameters.command,    action: delete }
+      - { key: github.copilot.tool.parameters.file_path,  action: delete }
+      # Exported even with content capture off: reveal installed skills, agents and MCP servers.
+      - { key: github.copilot.context.skills,             action: delete }
+      - { key: github.copilot.context.custom_agent_names, action: delete }
+      - { key: github.copilot.context.mcp_server_names,   action: delete }
+
+service:
+  pipelines:
+    traces:
+      processors: [memory_limiter, attributes/redact, resource/lab, batch]

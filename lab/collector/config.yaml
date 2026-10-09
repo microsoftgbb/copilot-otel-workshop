@@ -1,0 +1,53 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+  # Tags added here cannot be forgotten or faked by a client.
+  resource/lab:
+    attributes:
+      - key: deployment.environment.name
+        value: ${env:LAB_ENVIRONMENT}
+        action: upsert
+  batch:
+    timeout: 2s
+
+exporters:
+  otlp/aspire:
+    endpoint: aspire-dashboard:18889
+    tls:
+      insecure: true
+  # Aspire keeps a bounded in-memory window; the archive is the durable copy.
+  file/archive:
+    path: /data/archive.jsonl
+    rotation:
+      max_megabytes: 100
+      max_days: 14
+      max_backups: 20
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource/lab, batch]
+      exporters: [otlp/aspire, file/archive]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resource/lab, batch]
+      exporters: [otlp/aspire, file/archive]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource/lab, batch]
+      exporters: [otlp/aspire, file/archive]

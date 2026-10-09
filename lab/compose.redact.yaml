@@ -1,0 +1,8 @@
+# docker compose -f compose.yaml -f compose.redact.yaml up -d --force-recreate otel-collector
+services:
+  otel-collector:
+    command:
+      - --config=/etc/otelcol/config.yaml
+      - --config=/etc/otelcol/redact.yaml
+    volumes:
+      - ./overlays/redact.yaml:/etc/otelcol/redact.yaml:ro

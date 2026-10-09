@@ -1,0 +1,17 @@
+# Collector overlay: require a bearer token on both OTLP receivers.
+extensions:
+  bearertokenauth:
+    token: ${env:LAB_TOKEN}
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        auth:
+          authenticator: bearertokenauth
+      http:
+        auth:
+          authenticator: bearertokenauth
+
+service:
+  extensions: [health_check, bearertokenauth]

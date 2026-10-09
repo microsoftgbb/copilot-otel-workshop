@@ -1,0 +1,13 @@
+# docker compose -f compose.yaml -f compose.auth.yaml up -d
+# Requires LAB_TOKEN. Also turns on a browser-token login for the dashboard.
+services:
+  otel-collector:
+    command:
+      - --config=/etc/otelcol/config.yaml
+      - --config=/etc/otelcol/auth.yaml
+    volumes:
+      - ./overlays/auth.yaml:/etc/otelcol/auth.yaml:ro
+  aspire-dashboard:
+    environment:
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: "false"
+      DASHBOARD__FRONTEND__AUTHMODE: BrowserToken

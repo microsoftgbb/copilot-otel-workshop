@@ -1,0 +1,52 @@
+# Workshop lab stack:
+#   Copilot --OTLP--> otel-collector --> Aspire Dashboard (live UI)
+#                                   \--> archive.jsonl (durable copy, searchable offline)
+name: copilot-otel-lab
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.161.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      LAB_ENVIRONMENT: ${LAB_ENVIRONMENT:-lab}
+      LAB_TOKEN: ${LAB_TOKEN:-}
+    volumes:
+      - ./collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - ${LAB_DATA_DIR:-lab-data}:/data
+    ports:
+      # Loopback only by default. Telemetry can be sensitive; see module 07 before exposing it.
+      - "${LAB_BIND:-127.0.0.1}:${LAB_OTLP_GRPC_PORT:-4317}:4317"
+      - "${LAB_BIND:-127.0.0.1}:${LAB_OTLP_HTTP_PORT:-4318}:4318"
+    depends_on:
+      aspire-dashboard:
+        condition: service_started
+      data-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:latest
+    environment:
+      # OTLP is reachable only from the collector, on the compose network.
+      DASHBOARD__OTLP__AUTHMODE: Unsecured
+      DASHBOARD__FRONTEND__AUTHMODE: ${LAB_DASHBOARD_AUTH:-Unsecured}
+      DASHBOARD__FRONTEND__BROWSERTOKEN: ${LAB_DASHBOARD_TOKEN:-}
+      ASPIRE_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS: ${LAB_DASHBOARD_ANON:-true}
+      DASHBOARD__TELEMETRYLIMITS__MAXLOGCOUNT: "50000"
+      DASHBOARD__TELEMETRYLIMITS__MAXTRACECOUNT: "20000"
+      DASHBOARD__TELEMETRYLIMITS__MAXMETRICSCOUNT: "50000"
+    ports:
+      - "${LAB_BIND:-127.0.0.1}:${LAB_UI_PORT:-18888}:18888"
+    restart: unless-stopped
+
+  # The collector runs as uid 10001; a fresh volume or host folder is root-owned.
+  data-init:
+    image: busybox:1.37
+    command: ["chown", "-R", "10001:10001", "/data"]
+    user: "0"
+    volumes:
+      - ${LAB_DATA_DIR:-lab-data}:/data
+    restart: "no"
+
+volumes:
+  lab-data:

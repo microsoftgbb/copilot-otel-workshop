@@ -1,0 +1,17 @@
+# Collector overlay: send everything to a second destination as well.
+# `debug` prints to the collector log so you can watch it work. Swap in a real
+# backend by using the otlphttp block (any OTLP-speaking backend or another collector).
+exporters:
+  debug:
+    verbosity: basic
+  # otlphttp/other:
+  #   endpoint: https://otel.example.com:4318
+  #   headers:
+  #     Authorization: Bearer ${env:OTHER_BACKEND_TOKEN}
+
+service:
+  pipelines:
+    traces:
+      exporters: [otlp/aspire, file/archive, debug]
+    metrics:
+      exporters: [otlp/aspire, file/archive, debug]
