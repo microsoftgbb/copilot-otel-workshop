@@ -7,7 +7,7 @@ cd "$(dirname "$0")/.."
 
 export COMPOSE_PROJECT_NAME=copilot-otel-smoke
 export LAB_OTLP_GRPC_PORT=${LAB_OTLP_GRPC_PORT:-25317} LAB_OTLP_HTTP_PORT=${LAB_OTLP_HTTP_PORT:-25318} LAB_UI_PORT=${LAB_UI_PORT:-25888}
-tmp=$(mktemp -d); export LAB_DATA_DIR="$tmp/data"; mkdir -p "$LAB_DATA_DIR"
+tmp=$(mktemp -d)
 F=(-f compose.yaml)
 pass() { echo "PASS $*"; }
 fail() { echo "FAIL $*"; docker compose "${F[@]}" logs --tail 30 otel-collector || true; exit 1; }
@@ -27,7 +27,10 @@ cat <<J
 J
 }
 post() { curl -s -o /dev/null -w '%{http_code}' -X POST -H 'content-type: application/json' "${@:2}" -d "$1" "$url/v1/traces"; }
-archived() { grep -qs "$1" "$LAB_DATA_DIR/archive.jsonl"; }
+# Copy the archive out of the named volume. The collector owns the file (uid 10001), so a
+# host bind mount behaves differently on Linux and Docker Desktop; `cp` works everywhere.
+archived() { docker compose "${F[@]}" cp otel-collector:/data/archive.jsonl "$tmp/archive.jsonl" >/dev/null 2>&1 && grep -qs "$1" "$tmp/archive.jsonl"; }
+archived_fixed() { docker compose "${F[@]}" cp otel-collector:/data/archive.jsonl "$tmp/archive.jsonl" >/dev/null 2>&1 && grep -qsF "$1" "$tmp/archive.jsonl"; }
 
 echo "== base stack"
 docker compose "${F[@]}" up -d >/dev/null
@@ -35,13 +38,12 @@ wait_for "curl -fs -o /dev/null localhost:${LAB_UI_PORT}" || fail "dashboard UI 
 wait_for "[ \"\$(post '{\"resourceSpans\":[]}')\" = 200 ]" || fail "collector OTLP not accepting"; pass "collector accepting OTLP"
 wait_for "post \"\$(trace base)\" >/dev/null; sleep 1; archived marker.*base" || fail "span not archived"; pass "span reached the archive"
 archived "SECRET-PROMPT-base" && pass "without redaction, content is archived (expected: this is what the overlay prevents)" || fail "baseline should contain content"
-grep -qsF '"stringValue":"client-says-prod"' "$LAB_DATA_DIR/archive.jsonl" && fail "client-supplied environment tag survived"
-grep -qsF '{"key":"deployment.environment.name","value":{"stringValue":"lab"}}' "$LAB_DATA_DIR/archive.jsonl" || fail "collector environment tag missing"
+archived_fixed '"stringValue":"client-says-prod"' && fail "client-supplied environment tag survived"
+archived_fixed '{"key":"deployment.environment.name","value":{"stringValue":"lab"}}' || fail "collector environment tag missing"
 pass "collector environment tag overrides the client's"
 
 echo "== redact overlay"
 F=(-f compose.yaml -f compose.redact.yaml)
-: > "$LAB_DATA_DIR/archive.jsonl"
 docker compose "${F[@]}" up -d --force-recreate otel-collector >/dev/null
 wait_for "[ \"\$(post '{\"resourceSpans\":[]}')\" = 200 ]" || fail "collector not back after redact overlay"
 wait_for "post \"\$(trace redact)\" >/dev/null; sleep 1; archived marker.*redact" || fail "redacted span not archived"
